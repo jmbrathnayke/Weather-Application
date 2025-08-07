@@ -1,5 +1,4 @@
 import { FaExclamationTriangle } from 'react-icons/fa';
-import './ErrorMessage.css';
 
 const ErrorMessage = ({ message }) => {
   return (

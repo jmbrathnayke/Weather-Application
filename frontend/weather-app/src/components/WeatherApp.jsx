@@ -4,7 +4,6 @@ import WeatherCard from './WeatherCard';
 import ForecastList from './ForecastList';
 import ErrorMessage from './ErrorMessage';
 import LoadingSpinner from './LoadingSpinner';
-import './WeatherApp.css';
 
 const WeatherApp = () => {
   const [weatherData, setWeatherData] = useState(null);

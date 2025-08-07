@@ -1,6 +1,5 @@
 import { WiThermometer, WiHumidity, WiBarometer, WiStrongWind } from 'react-icons/wi';
 import { FaEye } from 'react-icons/fa';
-import './WeatherCard.css';
 
 const WeatherCard = ({ weather }) => {
   const {

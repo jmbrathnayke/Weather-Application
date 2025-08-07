@@ -1,5 +1,3 @@
-import './ForecastList.css';
-
 const ForecastList = ({ forecast }) => {
   const { city, country, forecast: dailyForecasts } = forecast;
 

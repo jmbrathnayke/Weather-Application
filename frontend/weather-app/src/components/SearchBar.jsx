@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 import { fetchWeatherData } from '../services/weatherService';
-import './SearchBar.css';
 
 const SearchBar = ({ onWeatherData, onLoading, onError }) => {
   const [city, setCity] = useState('');
