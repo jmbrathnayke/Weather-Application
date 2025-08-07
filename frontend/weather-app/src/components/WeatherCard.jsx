@@ -1,4 +1,5 @@
-import { WiThermometer, WiHumidity, WiBarometer, WiStrongWind, WiEye } from 'react-icons/wi';
+import { WiThermometer, WiHumidity, WiBarometer, WiStrongWind } from 'react-icons/wi';
+import { FaEye } from 'react-icons/fa';
 import './WeatherCard.css';
 
 const WeatherCard = ({ weather }) => {
@@ -65,7 +66,7 @@ const WeatherCard = ({ weather }) => {
         </div>
 
         <div className="detail-item">
-          <WiEye className="detail-icon" />
+          <FaEye className="detail-icon" />
           <div className="detail-info">
             <span className="detail-label">Visibility</span>
             <span className="detail-value">{details.visibility} km</span>
