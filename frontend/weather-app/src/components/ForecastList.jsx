@@ -1,12 +1,88 @@
-const ForecastList = ({ forecast }) => {
-  const { city, country, forecast: dailyForecasts } = forecast;
+const ForecastList = ({ weatherData, forecastData }) => {
+  // Handle cases where forecast data might be undefined
+  if (!forecastData || !Array.isArray(forecastData) || forecastData.length === 0) {
+    return <div className="forecast-list">Loading forecast data...</div>;
+  }
+
+  // Group forecast data by date (since API returns hourly data)
+  const dailyForecasts = [];
+  const groupedByDate = {};
+
+  forecastData.forEach(item => {
+    const date = item.datetime.split(' ')[0]; // Get date part only
+    if (!groupedByDate[date]) {
+      groupedByDate[date] = [];
+    }
+    groupedByDate[date].push(item);
+  });
+
+  // Create daily summaries (taking midday data as representative)
+  Object.keys(groupedByDate).slice(0, 5).forEach(date => {
+    const dayData = groupedByDate[date];
+    // Find midday forecast or use first available
+    const representativeData = dayData.find(item => item.datetime.includes('12:00')) || dayData[0];
+    
+    // Calculate min/max temps for the day
+    const temps = dayData.map(item => item.temperature);
+    const tempMin = Math.min(...temps);
+    const tempMax = Math.max(...temps);
+    
+    dailyForecasts.push({
+      date: date,
+      temperature: representativeData.temperature,
+      tempMin: tempMin,
+      tempMax: tempMax,
+      description: representativeData.description,
+      icon: representativeData.icon,
+      humidity: representativeData.humidity,
+      windSpeed: representativeData.windSpeed
+    });
+  });
 
   return (
     <div className="forecast-list">
-      <h3>5-Day Forecast for {city}, {country}</h3>
+      {/* Current Weather Card */}
+      {weatherData && (
+        <div className="current-weather-card">
+          <h3>Current Weather - {weatherData.name}</h3>
+          <div className="current-weather-content">
+            <div className="current-weather-main">
+              <img 
+                src={`https://openweathermap.org/img/wn/${weatherData.icon}@4x.png`}
+                alt={weatherData.description}
+                className="current-weather-icon"
+              />
+              <div className="current-weather-info">
+                <div className="current-temp">{Math.round(weatherData.temperature)}°C</div>
+                <div className="current-desc">{weatherData.description}</div>
+              </div>
+            </div>
+            <div className="current-weather-details">
+              <div className="detail-item">
+                <span className="detail-label">Feels like</span>
+                <span className="detail-value">{Math.round(weatherData.feelsLike || weatherData.temperature)}°C</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Humidity</span>
+                <span className="detail-value">{weatherData.humidity}%</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Wind</span>
+                <span className="detail-value">{weatherData.windSpeed} m/s</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Pressure</span>
+                <span className="detail-value">{weatherData.pressure || 'N/A'} hPa</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <h3>5-Day Forecast</h3>
       <div className="forecast-container">
         {dailyForecasts.map((day, index) => {
-          const iconUrl = `https://openweathermap.org/img/wn/${day.weather.icon}@2x.png`;
+          const iconUrl = `https://openweathermap.org/img/wn/${day.icon}@2x.png`;
           const dayName = new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' });
           const isToday = index === 0;
           
@@ -18,22 +94,22 @@ const ForecastList = ({ forecast }) => {
               
               <img 
                 src={iconUrl} 
-                alt={day.weather.description}
+                alt={day.description}
                 className="forecast-icon"
               />
               
               <div className="forecast-temps">
-                <span className="temp-max">{day.temperature.max}°</span>
-                <span className="temp-min">{day.temperature.min}°</span>
+                <span className="temp-max">{day.tempMax}°</span>
+                <span className="temp-min">{day.tempMin}°</span>
               </div>
               
               <div className="forecast-description">
-                {day.weather.description}
+                {day.description}
               </div>
               
               <div className="forecast-details">
-                <small>Humidity: {day.details.humidity}%</small>
-                <small>Wind: {day.details.wind} m/s</small>
+                <small>💧 {day.humidity}%</small>
+                <small>💨 {day.windSpeed} m/s</small>
               </div>
             </div>
           );

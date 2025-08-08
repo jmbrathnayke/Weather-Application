@@ -1,28 +1,21 @@
 import { useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
-import { fetchWeatherData } from '../services/weatherService';
 
-const SearchBar = ({ onWeatherData, onLoading, onError }) => {
+const SearchBar = ({ onSearch, loading, placeholder = "Enter city name..." }) => {
   const [city, setCity] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!city.trim()) {
-      onError('Please enter a city name');
       return;
     }
 
-    onLoading(true);
+    // Call the onSearch function passed from parent
+    await onSearch(city.trim());
     
-    try {
-      const data = await fetchWeatherData(city.trim());
-      onWeatherData(data);
-    } catch (error) {
-      onError(error.message);
-    } finally {
-      onLoading(false);
-    }
+    // Clear the input after search
+    setCity('');
   };
 
   return (
@@ -30,13 +23,22 @@ const SearchBar = ({ onWeatherData, onLoading, onError }) => {
       <div className="search-input-container">
         <input
           type="text"
-          placeholder="Enter city name..."
+          placeholder={placeholder}
           value={city}
           onChange={(e) => setCity(e.target.value)}
           className="search-input"
+          disabled={loading}
         />
-        <button type="submit" className="search-button">
-          <FaSearch />
+        <button 
+          type="submit" 
+          className="search-button"
+          disabled={loading || !city.trim()}
+        >
+          {loading ? (
+            <div className="search-loading">⏳</div>
+          ) : (
+            <FaSearch />
+          )}
         </button>
       </div>
     </form>
