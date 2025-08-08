@@ -13,24 +13,84 @@ class WeatherCache {
   constructor() {
     this.cache = new Map();
     this.CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+    this.CLEANUP_INTERVAL = 60 * 1000; // Clean up every 1 minute
+    
+    // Start automatic cleanup process
+    this.startAutomaticCleanup();
   }
 
   set(key, data) {
-    this.cache.set(key, { data, timestamp: Date.now() });
+    this.cache.set(key, { 
+      data, 
+      timestamp: Date.now() 
+    });
+    console.log(`🗄️ Backend cache: Stored ${key} for 5 minutes`);
   }
 
   get(key) {
     const cached = this.cache.get(key);
     if (!cached) return null;
-    if (Date.now() - cached.timestamp > this.CACHE_DURATION) {
+    
+    const age = Date.now() - cached.timestamp;
+    if (age > this.CACHE_DURATION) {
       this.cache.delete(key);
+      console.log(`⏰ Backend cache: Auto-expired ${key} after 5 minutes`);
       return null;
     }
+    
+    const remainingTime = Math.round((this.CACHE_DURATION - age) / 1000);
+    console.log(`📋 Backend cache: Serving ${key} from cache (${remainingTime}s remaining)`);
     return cached.data;
   }
 
   clear() {
     this.cache.clear();
+    console.log('🧹 Backend cache cleared');
+  }
+
+  // Automatic cleanup of expired entries
+  startAutomaticCleanup() {
+    setInterval(() => {
+      this.cleanupExpiredEntries();
+    }, this.CLEANUP_INTERVAL);
+  }
+
+  cleanupExpiredEntries() {
+    const now = Date.now();
+    let expiredCount = 0;
+    
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > this.CACHE_DURATION) {
+        this.cache.delete(key);
+        expiredCount++;
+        console.log(`🗑️ Backend auto-cleanup: Removed expired entry: ${key}`);
+      }
+    }
+    
+    if (expiredCount > 0) {
+      console.log(`🔄 Backend auto-cleanup: Removed ${expiredCount} expired entries`);
+    }
+  }
+
+  getStats() {
+    const now = Date.now();
+    let expiredEntries = 0;
+    let validEntries = 0;
+    
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > this.CACHE_DURATION) {
+        expiredEntries++;
+      } else {
+        validEntries++;
+      }
+    }
+    
+    return {
+      total: this.cache.size,
+      valid: validEntries,
+      expired: expiredEntries,
+      cacheDurationMinutes: this.CACHE_DURATION / (60 * 1000)
+    };
   }
 }
 

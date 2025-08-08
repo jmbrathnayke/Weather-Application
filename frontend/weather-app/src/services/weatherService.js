@@ -8,11 +8,15 @@ const weatherAPI = axios.create({
   timeout: 10000, // 10 seconds timeout
 });
 
-// Frontend Cache Implementation - 5-minute caching
+// Frontend Cache Implementation - 5-minute caching with automatic cleanup
 class WeatherCache {
   constructor() {
     this.cache = new Map();
     this.CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+    this.CLEANUP_INTERVAL = 60 * 1000; // Clean up every 1 minute
+    
+    // Start automatic cleanup process
+    this.startAutomaticCleanup();
   }
 
   generateKey(endpoint, params = {}) {
@@ -29,7 +33,7 @@ class WeatherCache {
       timestamp: Date.now(),
       cached: true
     });
-    console.log(`✅ Cached data for key: ${key}`);
+    console.log(`🗄️ Cached data for key: ${key} (expires in 5 minutes)`);
   }
 
   get(key) {
@@ -37,30 +41,87 @@ class WeatherCache {
     if (!cached) return null;
     
     // Check if cache is expired
-    if (Date.now() - cached.timestamp > this.CACHE_DURATION) {
+    const age = Date.now() - cached.timestamp;
+    if (age > this.CACHE_DURATION) {
       this.cache.delete(key);
-      console.log(`🕒 Cache expired for key: ${key}`);
+      console.log(`⏰ Cache automatically expired for key: ${key} after 5 minutes`);
       return null;
     }
     
-    console.log(`🎯 Serving from cache: ${key}`);
+    const remainingTime = Math.round((this.CACHE_DURATION - age) / 1000);
+    console.log(`📋 Serving from cache: ${key} (${remainingTime}s remaining)`);
     return cached.data;
   }
 
   clear() {
     this.cache.clear();
-    console.log('🧹 Cache cleared');
+    console.log('🧹 Cache manually cleared');
+  }
+
+  // Automatic cleanup of expired entries
+  startAutomaticCleanup() {
+    setInterval(() => {
+      this.cleanupExpiredEntries();
+    }, this.CLEANUP_INTERVAL);
+  }
+
+  cleanupExpiredEntries() {
+    const now = Date.now();
+    let expiredCount = 0;
+    
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > this.CACHE_DURATION) {
+        this.cache.delete(key);
+        expiredCount++;
+        console.log(`🗑️ Auto-cleanup: Removed expired cache entry: ${key}`);
+      }
+    }
+    
+    if (expiredCount > 0) {
+      console.log(`🔄 Auto-cleanup completed: Removed ${expiredCount} expired entries`);
+    }
   }
 
   getCacheInfo() {
-    const entries = Array.from(this.cache.entries()).map(([key, value]) => ({
-      key,
-      age: Math.round((Date.now() - value.timestamp) / 1000),
-      remainingTime: Math.round((this.CACHE_DURATION - (Date.now() - value.timestamp)) / 1000)
-    }));
+    const now = Date.now();
+    const entries = Array.from(this.cache.entries()).map(([key, value]) => {
+      const age = now - value.timestamp;
+      const remainingTime = Math.max(0, Math.round((this.CACHE_DURATION - age) / 1000));
+      
+      return {
+        key,
+        age: Math.round(age / 1000),
+        remainingTime,
+        isExpired: age > this.CACHE_DURATION
+      };
+    }).filter(entry => !entry.isExpired); // Only show non-expired entries
+    
     return {
-      size: this.cache.size,
+      size: entries.length,
+      totalSize: this.cache.size,
       entries
+    };
+  }
+
+  // Get cache statistics
+  getStats() {
+    const now = Date.now();
+    let expiredEntries = 0;
+    let validEntries = 0;
+    
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > this.CACHE_DURATION) {
+        expiredEntries++;
+      } else {
+        validEntries++;
+      }
+    }
+    
+    return {
+      total: this.cache.size,
+      valid: validEntries,
+      expired: expiredEntries,
+      cacheDurationMinutes: this.CACHE_DURATION / (60 * 1000)
     };
   }
 }
@@ -224,6 +285,10 @@ export const clearWeatherCache = () => {
 
 export const getCacheInfo = () => {
   return weatherCache.getCacheInfo();
+};
+
+export const getCacheStats = () => {
+  return weatherCache.getStats();
 };
 
 export const getCachedData = (endpoint, params = {}) => {

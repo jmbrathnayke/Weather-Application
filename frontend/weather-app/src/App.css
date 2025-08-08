@@ -1128,7 +1128,7 @@ body {
 
 .toggle-btn.active {
   background: white;
-  color: #667eea;
+  color: #d4d4d4;
   border-color: white;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
