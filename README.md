@@ -6,6 +6,10 @@ A full-stack weather application built with React (frontend) and Node.js/Express
 
 - **Current Weather**: Get real-time weather data for any city
 - **5-Day Forecast**: View detailed weather forecasts for the next 5 days
+- **Weather Dashboard**: View weather for multiple cities simultaneously
+- **Group Weather API**: Get weather data for multiple predefined cities
+- **Intelligent Caching**: 5-minute cache expiration with automatic cleanup
+- **Cache Monitoring**: Real-time cache statistics and performance insights
 - **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
 - **Error Handling**: User-friendly error messages for invalid cities or network issues
 - **Loading States**: Visual feedback during API calls
@@ -80,13 +84,46 @@ npm run dev
 ```
 The frontend application will start on `http://localhost:5173`
 
+## Cache System & Performance
+
+### Monitoring Cache Performance
+- **Cache Info Component**: Real-time cache statistics display
+- **Browser Console**: Detailed cache operation logs
+- **Automatic Expiration**: Cache entries expire after 5 minutes
+- **Background Cleanup**: Memory management every 60 seconds
+
+### Cache Console Logs
+Monitor cache operations in the browser console:
+```
+🗄️ Cached data for key: current_London (expires in 5 minutes)
+⏰ Cache automatically expired for key: current_London after 5 minutes
+🧹 Cleaned up 3 expired cache entries
+```
+
+### Performance Benefits
+- Reduced API calls to OpenWeatherMap
+- Faster response times for repeated requests
+- Lower bandwidth usage
+- Better user experience with instant cache hits
+
 ## API Endpoints
 
 ### Backend API Routes
 
+**Health & System:**
 - `GET /api/health` - Health check endpoint
+
+**Individual City Weather:**
 - `GET /api/weather/current/:city` - Get current weather for a city
 - `GET /api/weather/forecast/:city` - Get 5-day forecast for a city
+
+**Group Weather API:**
+- `GET /api/weather/cities-weather` - Get current weather for all predefined cities
+- `GET /api/weather/cities` - Get list of all available cities
+
+**Dashboard Routes:**
+- Multiple city weather display endpoints
+- Bulk weather data processing
 
 ### Example API Response
 
@@ -124,24 +161,33 @@ The frontend application will start on `http://localhost:5173`
 Weather-Application/
 ├── backend/
 │   ├── routes/
-│   │   └── weather.js
+│   │   ├── weather-new.js         # Part 1 compliant endpoints
+│   │   └── weather-dashboard.js   # Dashboard functionality
+│   ├── cities.json                # Predefined cities data
 │   ├── package.json
 │   ├── server.js
-│   └── .env.example
+│   ├── test-routes.js            # API testing utilities
+│   └── .env                      # Environment variables
 ├── frontend/
 │   └── weather-app/
 │       ├── src/
 │       │   ├── components/
 │       │   │   ├── WeatherApp.jsx
+│       │   │   ├── WeatherDashboard.jsx
+│       │   │   ├── CitiesWeather.jsx
+│       │   │   ├── CacheInfo.jsx        # Cache monitoring
 │       │   │   ├── SearchBar.jsx
 │       │   │   ├── WeatherCard.jsx
 │       │   │   ├── ForecastList.jsx
 │       │   │   ├── ErrorMessage.jsx
 │       │   │   └── LoadingSpinner.jsx
 │       │   ├── services/
-│       │   │   └── weatherService.js
+│       │   │   └── weatherService.js    # Enhanced caching service
 │       │   ├── App.jsx
+│       │   ├── App-dashboard.jsx        # Dashboard app version
 │       │   └── main.jsx
+│       ├── public/
+│       │   └── cities.json             # Frontend cities data
 │       ├── package.json
 │       └── vite.config.js
 └── README.md
@@ -152,6 +198,12 @@ Weather-Application/
 ### Backend (.env)
 - `PORT` - Server port (default: 5000)
 - `OPENWEATHER_API_KEY` - Your OpenWeatherMap API key
+- `NODE_ENV` - Environment mode (development/production)
+
+### Frontend Configuration
+- API base URL configured in `weatherService.js`
+- Cache settings (5-minute expiration, 60-second cleanup)
+- Dashboard and monitoring endpoints
 
 ## Getting OpenWeatherMap API Key
 
@@ -162,6 +214,19 @@ Weather-Application/
 5. Copy the key to your `.env` file
 
 ## Features in Detail
+
+### Intelligent Caching System
+- **5-minute cache expiration** for optimal performance
+- **Automatic cleanup** every 60 seconds to free memory
+- **Dual-layer caching** (frontend + backend)
+- **Cache monitoring** with real-time statistics
+- **Performance optimization** to reduce API calls
+
+### Dashboard Functionality
+- **Multi-city weather display** for predefined cities
+- **Bulk weather processing** for efficient data loading
+- **Group API endpoints** for simultaneous city updates
+- **Cache performance insights** for monitoring system efficiency
 
 ### Search Functionality
 - Search for weather by city name
