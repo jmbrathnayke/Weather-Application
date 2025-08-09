@@ -184,6 +184,7 @@ body {
   transition: all 0.3s ease;
   background: #f8f9fa;
   color: #2e2e2e;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .search-input:focus {
