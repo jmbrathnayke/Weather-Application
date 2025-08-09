@@ -1,72 +1,54 @@
-import { useState, useEffect } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
+import AuthButtons from './components/AuthButtons';
 import WeatherDashboard from './components/WeatherDashboard';
-import SearchBar from './components/SearchBar';
-import ForecastList from './components/ForecastList';
-import { fetchWeatherData } from './services/weatherService';
 import './App.css';
 
 function App() {
-  const [weatherData, setWeatherData] = useState(null);
-  const [forecastData, setForecastData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { isLoading, error, isAuthenticated } = useAuth0();
 
-  const handleSearch = async (city) => {
-    if (!city.trim()) {
-      setError('Please enter a city name');
-      return;
-    }
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="App">
+        <header className="App-header">
+          <h1>🌤️ Weather Application</h1>
+          <div className="loading">Loading authentication...</div>
+        </header>
+      </div>
+    );
+  }
 
-    setLoading(true);
-    setError('');
-    
-    try {
-      const data = await fetchWeatherData(city);
-      setWeatherData(data.weather);
-      setForecastData(data.forecast || []);
-    } catch (err) {
-      console.error('Error fetching weather data:', err);
-      setError(err.message || 'Failed to fetch weather data');
-      setWeatherData(null);
-      setForecastData([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Show error state
+  if (error) {
+    return (
+      <div className="App">
+        <header className="App-header">
+          <h1>🌤️ Weather Application</h1>
+          <div className="error">Auth Error: {error.message}</div>
+          <AuthButtons />
+        </header>
+      </div>
+    );
+  }
 
   return (
     <div className="App">
       <header className="App-header">
-        <h1>🌤️ Weather Application</h1>
-        
-        {/* Search bar always visible */}
-        <SearchBar 
-          onSearch={handleSearch}
-          loading={loading}
-          placeholder="Search for any city..."
-        />
-        
-        {error && <div className="error-message">{error}</div>}
+        <div className="header-top">
+          <h1>🌤️ Weather Application</h1>
+          <AuthButtons />
+        </div>
       </header>
 
       <main className="App-main">
-        {/* Dashboard always visible at top */}
-        <WeatherDashboard />
-        
-        {/* Search results section */}
-        <div className="search-results">
-          {loading ? (
-            <div className="loading">🌀 Loading weather data...</div>
-          ) : weatherData ? (
-            <div className="forecast-section">
-              <h2>🔍 Search Results for {weatherData.name}</h2>
-              <ForecastList 
-                weatherData={weatherData}
-                forecastData={forecastData}
-              />
-            </div>
-          ) : null}
-        </div>
+        {isAuthenticated ? (
+          <WeatherDashboard />
+        ) : (
+          <div className="welcome-message">
+            <h2>Welcome to Weather App</h2>
+            <p>Please log in to access weather data</p>
+          </div>
+        )}
       </main>
     </div>
   );
