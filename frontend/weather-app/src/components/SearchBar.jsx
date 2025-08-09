@@ -4,6 +4,7 @@ import { FaSearch } from 'react-icons/fa';
 const SearchBar = ({ onSearch, loading, placeholder = "Enter city name..." }) => {
   const [city, setCity] = useState('');
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     
