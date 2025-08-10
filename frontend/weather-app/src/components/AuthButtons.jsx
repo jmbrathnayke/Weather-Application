@@ -18,15 +18,18 @@ const AuthButtons = () => {
     <div className="auth-buttons">
       {!isAuthenticated ? (
         <button onClick={handleLogin} className="login-button">
-          Login
+          <span>🔐</span> Login
         </button>
       ) : (
-        <>
-          <span className="user-info">Welcome, {user?.name || user?.email}!</span>
+        <div className="user-section">
+          <div className="user-info">
+            <span className="user-avatar">👤</span>
+            <span className="user-name">{user?.name || user?.email}</span>
+          </div>
           <button onClick={() => logout({ returnTo: window.location.origin })} className="logout-button">
-            Logout
+            <span>🚪</span> Logout
           </button>
-        </>
+        </div>
       )}
     </div>
   );
