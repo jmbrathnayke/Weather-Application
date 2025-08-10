@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import weatherRoutes from './routes/weather-dashboard.js';
+import { checkJwt, extractUser, authErrorHandler, sessionUtils } from './middleware/auth-simple.js';
 
 // Load environment variables
 dotenv.config();
@@ -16,13 +17,67 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Health check route (public - no auth required)
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'Weather API Server is running',
+    timestamp: new Date().toISOString(),
+    authenticated: !!req.auth,
+    session: req.auth ? sessionUtils.getSessionInfo(req) : null
+  });
+});
+
+// Authentication middleware (JWT validation) - applied after health check
+app.use('/api', (req, res, next) => {
+  // Skip auth for health check
+  if (req.path === '/health') {
+    return next();
+  }
+  // Apply JWT check for all other API routes
+  checkJwt(req, res, next);
+});
+app.use(extractUser);
+
+// Session activity logging
+app.use((req, res, next) => {
+  if (req.auth) {
+    sessionUtils.logSessionActivity(req, `${req.method} ${req.path}`);
+  }
+  next();
+});
+
 // Routes
 app.use('/api/weather', weatherRoutes);
 
-// Health check route
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Weather API Server is running' });
+// Auth status endpoint
+app.get('/api/auth/status', (req, res) => {
+  if (!req.auth) {
+    return res.status(401).json({ 
+      authenticated: false, 
+      message: 'Not authenticated' 
+    });
+  }
+  
+  const sessionInfo = sessionUtils.getSessionInfo(req);
+  res.json({
+    authenticated: true,
+    user: {
+      id: req.auth.sub,
+      email: req.auth.email,
+      name: req.auth.name
+    },
+    session: sessionInfo,
+    tokenInfo: {
+      issuer: req.auth.iss,
+      audience: req.auth.aud,
+      scopes: req.auth.scope?.split(' ') || []
+    }
+  });
 });
+
+// Authentication error handler
+app.use(authErrorHandler);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
