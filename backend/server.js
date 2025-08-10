@@ -2,8 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import weatherRoutes from './routes/weather-dashboard.js';
-// Use simple auth for development to avoid JWT issues
-import { checkJwt, extractUser, authErrorHandler, sessionUtils } from './middleware/auth-simple.js';
+// Use improved Auth0 authentication with development fallback
+import { checkJwt, extractUser, authErrorHandler, sessionUtils } from './middleware/auth.js';
 
 // Load environment variables
 dotenv.config();

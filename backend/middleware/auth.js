@@ -4,43 +4,83 @@ import jwksClient from 'jwks-client';
 // Auth0 configuration
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-weather.us.auth0.com';
 const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE;
+const IS_DEVELOPMENT = process.env.NODE_ENV !== 'production';
+
+console.log('🔐 Auth0 Configuration:', {
+  domain: AUTH0_DOMAIN,
+  audience: AUTH0_AUDIENCE ? 'Set' : 'Not set',
+  development: IS_DEVELOPMENT
+});
 
 // Create JWKS client for Auth0
 const client = jwksClient({
   jwksUri: `https://${AUTH0_DOMAIN}/.well-known/jwks.json`,
-  requestHeaders: {}, // Optional
-  timeout: 30000, // Defaults to 30s
+  requestHeaders: {},
+  timeout: 30000,
+  cache: true,
+  rateLimit: true,
+  jwksRequestsPerMinute: 5,
+  jwksUri: `https://${AUTH0_DOMAIN}/.well-known/jwks.json`
 });
 
-// Function to get signing key
+// Function to get signing key with better error handling
 function getKey(header, callback) {
+  if (!header || !header.kid) {
+    console.error('❌ No kid found in JWT header');
+    return callback(new Error('No kid found in JWT header'));
+  }
+
   client.getSigningKey(header.kid, (err, key) => {
     if (err) {
-      console.error('Error getting signing key:', err);
+      console.error('❌ Error getting signing key:', err.message);
       return callback(err);
     }
+    
+    if (!key) {
+      console.error('❌ No signing key received');
+      return callback(new Error('No signing key received'));
+    }
+
     const signingKey = key.publicKey || key.rsaPublicKey;
+    if (!signingKey) {
+      console.error('❌ No valid signing key found');
+      return callback(new Error('No valid signing key found'));
+    }
+
+    console.log('✅ Successfully retrieved signing key');
     callback(null, signingKey);
   });
 }
 
-// JWT Authentication middleware
-export const checkJwt = jwt({
+// Development bypass middleware
+const developmentAuth = (req, res, next) => {
+  console.log('🔓 Development mode: Auth bypassed');
+  req.auth = {
+    sub: 'dev-user-123',
+    email: 'dev@example.com',
+    name: 'Development User'
+  };
+  next();
+};
+
+// JWT Authentication middleware with fallback
+export const checkJwt = IS_DEVELOPMENT ? developmentAuth : jwt({
   secret: getKey,
-  ...(AUTH0_AUDIENCE && { audience: AUTH0_AUDIENCE }), // Only include audience if it's set
+  ...(AUTH0_AUDIENCE && { audience: AUTH0_AUDIENCE }),
   issuer: `https://${AUTH0_DOMAIN}/`,
-  algorithms: ['RS256']
-}).unless({ 
+  algorithms: ['RS256'],
+  credentialsRequired: true
+}).unless({
   path: [
-    '/api/health',
-    { url: '/api/weather/dashboard', methods: ['GET'] }
-  ] 
+    '/api/health'
+    // All other routes require authentication
+  ]
 });
 
-// Optional middleware - protect specific routes
+// middleware - protect specific routes
 export const requireAuth = jwt({
   secret: getKey,
-  ...(AUTH0_AUDIENCE && { audience: AUTH0_AUDIENCE }), // Only include audience if it's set
+  ...(AUTH0_AUDIENCE && { audience: AUTH0_AUDIENCE }),
   issuer: `https://${AUTH0_DOMAIN}/`,
   algorithms: ['RS256']
 });
