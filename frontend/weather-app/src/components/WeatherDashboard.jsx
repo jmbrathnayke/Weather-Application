@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { fetchDashboardWeather } from '../services/weatherService';
+import { useAuth0 } from '@auth0/auth0-react';
+import { fetchDashboardWeather, setAuthToken } from '../services/weatherService.js';
 import WeatherCard from './WeatherCard';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorMessage from './ErrorMessage';
 import CacheInfo from './CacheInfo';
 
 const WeatherDashboard = () => {
+  const { getAccessTokenSilently, isAuthenticated, isLoading } = useAuth0();
   const [dashboardData, setDashboardData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -14,8 +16,19 @@ const WeatherDashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadDashboard = async () => {
+    if (!isAuthenticated) {
+      setError('Please log in to view the weather dashboard');
+      setLoading(false);
+      return;
+    }
+
     try {
       setError('');
+      
+      // Get Auth0 access token and set it in the weather service
+      const token = await getAccessTokenSilently();
+      setAuthToken(token);
+      
       const data = await fetchDashboardWeather();
       setDashboardData(data.dashboard || []);
       setLastUpdated(data.timestamp);
@@ -39,13 +52,19 @@ const WeatherDashboard = () => {
   };
 
   useEffect(() => {
-    loadDashboard();
-    
-    // Auto-refresh every 5 minutes
-    const interval = setInterval(loadDashboard, 5 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
+    // Only load dashboard if user is authenticated and Auth0 has finished loading
+    if (!isLoading && isAuthenticated) {
+      loadDashboard();
+      
+      // Auto-refresh every 5 minutes
+      const interval = setInterval(loadDashboard, 5 * 60 * 1000);
+      
+      return () => clearInterval(interval);
+    } else if (!isLoading && !isAuthenticated) {
+      setLoading(false);
+      setError('Please log in to view the weather dashboard');
+    }
+  }, [isAuthenticated, isLoading]);
 
   if (loading) {
     return (

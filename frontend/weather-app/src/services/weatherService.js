@@ -1,12 +1,28 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5001/api/weather';
+console.log('✅ weatherService.js loaded - ' + new Date().toISOString());
+
+const API_BASE_URL = 'http://localhost:5002/api';
 
 // Create axios instance with default config
 const weatherAPI = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000, // 10 seconds timeout
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
+
+// Function to set authorization header
+export const setAuthToken = (token) => {
+  if (token) {
+    weatherAPI.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    console.log('🔑 Auth token set in weatherService');
+  } else {
+    delete weatherAPI.defaults.headers.common['Authorization'];
+    console.log('🔑 Auth token removed from weatherService');
+  }
+};
 
 // Frontend Cache Implementation - 5-minute caching with automatic cleanup
 class WeatherCache {
@@ -28,114 +44,125 @@ class WeatherCache {
   }
 
   set(key, data) {
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-      cached: true
+    this.cache.set(key, { 
+      data, 
+      timestamp: Date.now() 
     });
-    console.log(`🗄️ Cached data for key: ${key} (expires in 5 minutes)`);
+    console.log(`🗄️ Frontend cache: Stored ${key} for 5 minutes`);
   }
 
   get(key) {
     const cached = this.cache.get(key);
     if (!cached) return null;
     
-    // Check if cache is expired
     const age = Date.now() - cached.timestamp;
     if (age > this.CACHE_DURATION) {
       this.cache.delete(key);
-      console.log(`⏰ Cache automatically expired for key: ${key} after 5 minutes`);
+      console.log(`⏰ Frontend cache: Auto-expired ${key} after 5 minutes`);
       return null;
     }
     
     const remainingTime = Math.round((this.CACHE_DURATION - age) / 1000);
-    console.log(`📋 Serving from cache: ${key} (${remainingTime}s remaining)`);
+    console.log(` Frontend cache: Serving ${key} from cache (${remainingTime}s remaining)`);
     return cached.data;
   }
 
   clear() {
     this.cache.clear();
-    console.log('🧹 Cache manually cleared');
+    console.log(' Frontend cache cleared');
   }
 
-  // Automatic cleanup of expired entries
+  has(key) {
+    return this.cache.has(key);
+  }
+
+  keys() {
+    return Array.from(this.cache.keys());
+  }
+
+  size() {
+    return this.cache.size;
+  }
+
   startAutomaticCleanup() {
     setInterval(() => {
-      this.cleanupExpiredEntries();
+      let cleanedCount = 0;
+      for (const [key, cached] of this.cache.entries()) {
+        const age = Date.now() - cached.timestamp;
+        if (age > this.CACHE_DURATION) {
+          this.cache.delete(key);
+          cleanedCount++;
+        }
+      }
+      if (cleanedCount > 0) {
+        console.log(`🧹 Frontend cache: Auto-cleaned ${cleanedCount} expired entries`);
+      }
     }, this.CLEANUP_INTERVAL);
-  }
-
-  cleanupExpiredEntries() {
-    const now = Date.now();
-    let expiredCount = 0;
-    
-    for (const [key, entry] of this.cache.entries()) {
-      if (now - entry.timestamp > this.CACHE_DURATION) {
-        this.cache.delete(key);
-        expiredCount++;
-        console.log(`🗑️ Auto-cleanup: Removed expired cache entry: ${key}`);
-      }
-    }
-    
-    if (expiredCount > 0) {
-      console.log(`🔄 Auto-cleanup completed: Removed ${expiredCount} expired entries`);
-    }
-  }
-
-  getCacheInfo() {
-    const now = Date.now();
-    const entries = Array.from(this.cache.entries()).map(([key, value]) => {
-      const age = now - value.timestamp;
-      const remainingTime = Math.max(0, Math.round((this.CACHE_DURATION - age) / 1000));
-      
-      return {
-        key,
-        age: Math.round(age / 1000),
-        remainingTime,
-        isExpired: age > this.CACHE_DURATION
-      };
-    }).filter(entry => !entry.isExpired); // Only show non-expired entries
-    
-    return {
-      size: entries.length,
-      totalSize: this.cache.size,
-      entries
-    };
-  }
-
-  // Get cache statistics
-  getStats() {
-    const now = Date.now();
-    let expiredEntries = 0;
-    let validEntries = 0;
-    
-    for (const [key, entry] of this.cache.entries()) {
-      if (now - entry.timestamp > this.CACHE_DURATION) {
-        expiredEntries++;
-      } else {
-        validEntries++;
-      }
-    }
-    
-    return {
-      total: this.cache.size,
-      valid: validEntries,
-      expired: expiredEntries,
-      cacheDurationMinutes: this.CACHE_DURATION / (60 * 1000)
-    };
   }
 }
 
-// Global cache instance
 const weatherCache = new WeatherCache();
 
-// NEW: Dashboard weather function - Fetch all cities for dashboard
+// Cache Statistics Function
+export const getCacheStats = () => {
+  const stats = {
+    size: weatherCache.size(),
+    keys: weatherCache.keys(),
+    lastUpdated: new Date().toISOString()
+  };
+  console.log('📊 Frontend cache stats:', stats);
+  return stats;
+};
+
+// Cache Info Function
+export const getCacheInfo = () => {
+  const stats = getCacheStats();
+  const entries = [];
+  
+  // Convert cache entries to a format the component expects
+  for (const [key, cached] of weatherCache.cache.entries()) {
+    const age = Date.now() - cached.timestamp;
+    const remainingTime = Math.max(0, weatherCache.CACHE_DURATION - age);
+    
+    entries.push({
+      key: key,
+      timestamp: cached.timestamp,
+      age: Math.round(age / 1000),
+      remainingTime: Math.round(remainingTime / 1000),
+      data: cached.data
+    });
+  }
+  
+  return {
+    frontendCacheEnabled: true,
+    frontendCacheSize: stats.size,
+    frontendCacheKeys: stats.keys,
+    entries: entries,
+    cacheDurationMinutes: 5,
+    lastChecked: stats.lastUpdated
+  };
+};
+
+// Clear Cache Function
+export const clearWeatherCache = () => {
+  weatherCache.clear();
+  return { 
+    success: true, 
+    message: 'Frontend cache cleared successfully',
+    timestamp: new Date().toISOString()
+  };
+};
+
+// Main Weather Dashboard Fetch Function
 export const fetchDashboardWeather = async () => {
-  const cacheKey = weatherCache.generateKey('dashboard');
+  console.log('🌍 Fetching dashboard weather data...');
+  
+  const cacheKey = weatherCache.generateKey('/weather/dashboard');
   
   // Check frontend cache first
   const cachedData = weatherCache.get(cacheKey);
   if (cachedData) {
+    console.log('📋 Serving dashboard from frontend cache');
     return {
       ...cachedData,
       frontendCached: true
@@ -143,7 +170,10 @@ export const fetchDashboardWeather = async () => {
   }
 
   try {
-    const response = await weatherAPI.get('/dashboard');
+    console.log('🌐 Making API request to dashboard endpoint...');
+    const response = await weatherAPI.get('/weather/dashboard');
+    console.log('✅ Dashboard API response received:', response.status);
+    
     const data = {
       dashboard: response.data.dashboard,
       cached: response.data.cached || false,
@@ -155,11 +185,15 @@ export const fetchDashboardWeather = async () => {
 
     // Cache the response in frontend
     weatherCache.set(cacheKey, data);
+    console.log(`📊 Dashboard loaded with ${data.totalCities} cities`);
     
     return data;
   } catch (error) {
+    console.error('❌ Dashboard API error:', error);
+    
     if (error.response) {
       const { status, data } = error.response;
+      console.error(`❌ API Error ${status}:`, data);
       
       if (status === 404) {
         throw new Error(data.error || 'Dashboard data not found.');
@@ -168,60 +202,34 @@ export const fetchDashboardWeather = async () => {
       if (status === 500) {
         throw new Error(data.error || 'Server error occurred while fetching dashboard.');
       }
-    }
-    
-    if (error.code === 'ECONNABORTED') {
-      throw new Error('Request timeout. Please try again.');
-    }
-    
-    if (error.request) {
-      throw new Error('Unable to connect to weather service. Please check your internet connection.');
-    }
-    
-    throw new Error('An unexpected error occurred while fetching dashboard data.');
-  }
-};
-
-// NEW: Get available cities list
-export const fetchAvailableCities = async () => {
-  const cacheKey = weatherCache.generateKey('cities');
-  
-  // Check frontend cache first
-  const cachedData = weatherCache.get(cacheKey);
-  if (cachedData) {
-    return cachedData;
-  }
-
-  try {
-    const response = await weatherAPI.get('/cities');
-    const data = response.data.cities;
-
-    // Cache the response in frontend
-    weatherCache.set(cacheKey, data);
-    
-    return data;
-  } catch (error) {
-    if (error.response) {
-      const { status, data } = error.response;
-      throw new Error(data.error || 'Failed to load cities list');
+      
+      if (status === 401) {
+        throw new Error('Authentication failed. Please log in again.');
+      }
+      
+      throw new Error(data.error || `API error occurred (${status}).`);
     }
     
     if (error.request) {
-      throw new Error('Unable to connect to weather service.');
+      console.error('❌ Network error - no response received');
+      throw new Error('Unable to connect to weather service. Please check your connection.');
     }
     
-    throw new Error('An unexpected error occurred while fetching cities list.');
+    console.error('❌ Request setup error:', error.message);
+    throw new Error(`Request failed: ${error.message}`);
   }
 };
 
-// EXISTING FUNCTION - Fetch single city weather (for SearchBar)
+// Single City Weather Function (for individual weather requests)
 export const fetchWeatherData = async (city) => {
-  const cityKey = city.toLowerCase().trim();
-  const cacheKey = weatherCache.generateKey('weather-data', { city: cityKey });
+  console.log(`🌤️ Fetching weather for ${city}...`);
+  
+  const cacheKey = weatherCache.generateKey('/weather/search', { city });
   
   // Check frontend cache first
   const cachedData = weatherCache.get(cacheKey);
   if (cachedData) {
+    console.log(`📋 Serving ${city} weather from frontend cache`);
     return {
       ...cachedData,
       frontendCached: true
@@ -229,124 +237,41 @@ export const fetchWeatherData = async (city) => {
   }
 
   try {
-    // Fetch current weather and forecast in parallel
-    const [weatherResponse, forecastResponse] = await Promise.all([
-      weatherAPI.get(`/current/${encodeURIComponent(city)}`),
-      weatherAPI.get(`/forecast/${encodeURIComponent(city)}`)
-    ]);
-
+    const response = await weatherAPI.get(`/weather/search?city=${encodeURIComponent(city)}`);
     const data = {
-      weather: weatherResponse.data,
-      forecast: forecastResponse.data,
-      timestamp: new Date().toISOString(),
+      ...response.data,
       frontendCached: false
     };
 
-    // Cache the combined response in frontend
+    // Cache the response
     weatherCache.set(cacheKey, data);
     
     return data;
   } catch (error) {
-    // Handle different types of errors
+    console.error(`❌ Weather fetch error for ${city}:`, error);
+    
     if (error.response) {
-      // Server responded with error status
       const { status, data } = error.response;
       
       if (status === 404) {
-        throw new Error(data.error || 'City not found. Please check the city name and try again.');
-      } else if (status === 500) {
-        throw new Error(data.error || 'Server error. Please try again later.');
-      } else if (status >= 400) {
-        throw new Error(data.error || 'Failed to fetch weather data.');
+        throw new Error(data.error || `City "${city}" not found.`);
       }
-    } else if (error.request) {
-      // Request was made but no response received
-      throw new Error('Unable to connect to weather service. Please check your internet connection and try again.');
-    } else {
-      // Something else happened
-      throw new Error('An unexpected error occurred. Please try again.');
+      
+      if (status === 500) {
+        throw new Error(data.error || 'Server error occurred while fetching weather.');
+      }
+      
+      if (status === 401) {
+        throw new Error('Authentication failed. Please log in again.');
+      }
+      
+      throw new Error(data.error || `API error occurred (${status}).`);
     }
-  }
-};
-
-export const checkServerHealth = async () => {
-  try {
-    const response = await weatherAPI.get('/health');
-    return response.data;
-  } catch (error) {
-    throw new Error('Weather service is unavailable');
-  }
-};
-
-// Cache Management Functions
-export const clearWeatherCache = () => {
-  weatherCache.clear();
-};
-
-export const getCacheInfo = () => {
-  return weatherCache.getCacheInfo();
-};
-
-export const getCacheStats = () => {
-  return weatherCache.getStats();
-};
-
-export const getCachedData = (endpoint, params = {}) => {
-  const key = weatherCache.generateKey(endpoint, params);
-  return weatherCache.get(key);
-};
-
-// Individual cache functions for specific data types
-export const fetchCurrentWeather = async (city) => {
-  const cityKey = city.toLowerCase().trim();
-  const cacheKey = weatherCache.generateKey('current-weather', { city: cityKey });
-  
-  const cachedData = weatherCache.get(cacheKey);
-  if (cachedData) {
-    return cachedData;
-  }
-
-  try {
-    const response = await weatherAPI.get(`/current/${encodeURIComponent(city)}`);
-    const data = {
-      ...response.data,
-      timestamp: new Date().toISOString(),
-      frontendCached: false
-    };
-
-    weatherCache.set(cacheKey, data);
-    return data;
-  } catch (error) {
-    if (error.response?.status === 404) {
-      throw new Error('City not found. Please check the city name and try again.');
+    
+    if (error.request) {
+      throw new Error('Unable to connect to weather service. Please check your connection.');
     }
-    throw new Error('Failed to fetch current weather data.');
-  }
-};
-
-export const fetchForecastData = async (city) => {
-  const cityKey = city.toLowerCase().trim();
-  const cacheKey = weatherCache.generateKey('forecast', { city: cityKey });
-  
-  const cachedData = weatherCache.get(cacheKey);
-  if (cachedData) {
-    return cachedData;
-  }
-
-  try {
-    const response = await weatherAPI.get(`/forecast/${encodeURIComponent(city)}`);
-    const data = {
-      forecast: response.data,
-      timestamp: new Date().toISOString(),
-      frontendCached: false
-    };
-
-    weatherCache.set(cacheKey, data);
-    return data;
-  } catch (error) {
-    if (error.response?.status === 404) {
-      throw new Error('City not found for forecast. Please check the city name and try again.');
-    }
-    throw new Error('Failed to fetch forecast data.');
+    
+    throw new Error(`Request failed: ${error.message}`);
   }
 };

@@ -3,16 +3,38 @@ import AuthButtons from './components/AuthButtons';
 import WeatherDashboard from './components/WeatherDashboard';
 import SearchBar from './components/SearchBar';
 import ForecastList from './components/ForecastList';
-import { fetchWeatherData } from './services/weatherService';
-import { useState } from 'react';
+import {clearWeatherCache, fetchWeatherData, setAuthToken } from './services/weatherService.js';
+import { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  const { isLoading, error, isAuthenticated } = useAuth0();
+  const { isLoading, error, isAuthenticated, getAccessTokenSilently } = useAuth0();
   const [weatherData, setWeatherData] = useState(null);
   const [forecastData, setForecastData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState('');
+
+  // Set up Auth0 token when user is authenticated
+  useEffect(() => {
+    const setupAuth = async () => {
+      if (isAuthenticated) {
+        try {
+          const token = await getAccessTokenSilently();
+          setAuthToken(token);
+          console.log('✅ Auth0 token set for API calls');
+        } catch (error) {
+          console.error('Failed to get Auth0 token:', error);
+        }
+      } else {
+        // Clear token when not authenticated
+        setAuthToken(null);
+      }
+    };
+
+    if (!isLoading) {
+      setupAuth();
+    }
+  }, [isAuthenticated, isLoading, getAccessTokenSilently]);
 
   // Search handler for city/town
   const handleSearch = async (city) => {

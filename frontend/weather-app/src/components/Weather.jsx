@@ -2,7 +2,7 @@ import { useState } from 'react';
 import WeatherDashboard from './WeatherDashboard';
 import SearchBar from './SearchBar';
 import ForecastList from './ForecastList';
-import { fetchWeatherData } from '../services/weatherService';
+import { fetchWeatherData } from '../services/weatherService.js';
 
 export default function Weather() {
   const [weatherData, setWeatherData] = useState(null);

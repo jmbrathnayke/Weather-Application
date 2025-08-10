@@ -27,7 +27,7 @@ function getKey(header, callback) {
 // JWT Authentication middleware
 export const checkJwt = jwt({
   secret: getKey,
-  audience: AUTH0_AUDIENCE,
+  ...(AUTH0_AUDIENCE && { audience: AUTH0_AUDIENCE }), // Only include audience if it's set
   issuer: `https://${AUTH0_DOMAIN}/`,
   algorithms: ['RS256']
 }).unless({ 
@@ -40,28 +40,28 @@ export const checkJwt = jwt({
 // Optional middleware - protect specific routes
 export const requireAuth = jwt({
   secret: getKey,
-  audience: AUTH0_AUDIENCE,
+  ...(AUTH0_AUDIENCE && { audience: AUTH0_AUDIENCE }), // Only include audience if it's set
   issuer: `https://${AUTH0_DOMAIN}/`,
   algorithms: ['RS256']
 });
 
 // User info extraction middleware
 export const extractUser = (req, res, next) => {
-  if (req.user) {
-    console.log(' Authenticated user:', {
-      sub: req.user.sub,
-      email: req.user.email,
-      name: req.user.name,
-      scope: req.user.scope
+  if (req.auth) {
+    console.log('✅ Authenticated user:', {
+      sub: req.auth.sub,
+      email: req.auth.email,
+      name: req.auth.name,
+      scope: req.auth.scope
     });
     
     // Add user info to request for downstream usage
     req.userInfo = {
-      id: req.user.sub,
-      email: req.user.email,
-      name: req.user.name,
-      permissions: req.user.permissions || [],
-      scope: req.user.scope?.split(' ') || []
+      id: req.auth.sub,
+      email: req.auth.email,
+      name: req.auth.name,
+      permissions: req.auth.permissions || [],
+      scope: req.auth.scope?.split(' ') || []
     };
   }
   next();
@@ -71,16 +71,16 @@ export const extractUser = (req, res, next) => {
 export const sessionUtils = {
   // Extract session info from JWT token
   getSessionInfo: (req) => {
-    if (!req.user) return null;
+    if (!req.auth) return null;
     
     return {
-      userId: req.user.sub,
-      email: req.user.email,
-      name: req.user.name,
-      issuedAt: req.user.iat,
-      expiresAt: req.user.exp,
-      sessionAge: Date.now() / 1000 - req.user.iat,
-      timeToExpiry: req.user.exp - Date.now() / 1000
+      userId: req.auth.sub,
+      email: req.auth.email,
+      name: req.auth.name,
+      issuedAt: req.auth.iat,
+      expiresAt: req.auth.exp,
+      sessionAge: Date.now() / 1000 - req.auth.iat,
+      timeToExpiry: req.auth.exp - Date.now() / 1000
     };
   },
   
@@ -96,7 +96,7 @@ export const sessionUtils = {
   logSessionActivity: (req, activity) => {
     const sessionInfo = sessionUtils.getSessionInfo(req);
     if (sessionInfo) {
-      console.log(` Session Activity: ${activity}`, {
+      console.log(`🔐 Session Activity: ${activity}`, {
         user: sessionInfo.email,
         sessionAge: Math.round(sessionInfo.sessionAge / 60) + ' minutes',
         timeToExpiry: Math.round(sessionInfo.timeToExpiry / 60) + ' minutes'
@@ -124,13 +124,13 @@ export const authErrorHandler = (err, req, res, next) => {
 export const oidcUtils = {
   // Validate OpenID Connect claims
   validateOIDCClaims: (req, res, next) => {
-    if (!req.user) {
+    if (!req.auth) {
       return res.status(401).json({ error: 'No user claims found' });
     }
     
     // Check required OIDC claims
     const requiredClaims = ['sub', 'aud', 'iss', 'exp', 'iat'];
-    const missingClaims = requiredClaims.filter(claim => !req.user[claim]);
+    const missingClaims = requiredClaims.filter(claim => !req.auth[claim]);
     
     if (missingClaims.length > 0) {
       return res.status(401).json({
@@ -139,25 +139,25 @@ export const oidcUtils = {
       });
     }
     
-    console.log(' OIDC Claims validated successfully');
+    console.log('✅ OIDC Claims validated successfully');
     next();
   },
   
   // Extract standard OIDC profile
   getOIDCProfile: (req) => {
-    if (!req.user) return null;
+    if (!req.auth) return null;
     
     return {
-      sub: req.user.sub, // Subject (unique user ID)
-      name: req.user.name,
-      email: req.user.email,
-      email_verified: req.user.email_verified,
-      picture: req.user.picture,
-      updated_at: req.user.updated_at,
-      iss: req.user.iss, // Issuer
-      aud: req.user.aud, // Audience
-      iat: req.user.iat, // Issued at
-      exp: req.user.exp  // Expires at
+      sub: req.auth.sub, // Subject (unique user ID)
+      name: req.auth.name,
+      email: req.auth.email,
+      email_verified: req.auth.email_verified,
+      picture: req.auth.picture,
+      updated_at: req.auth.updated_at,
+      iss: req.auth.iss, // Issuer
+      aud: req.auth.aud, // Audience
+      iat: req.auth.iat, // Issued at
+      exp: req.auth.exp  // Expires at
     };
   }
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchAllCitiesWeather } from '../services/weatherService';
+import { fetchDashboardWeather } from '../services/weatherService.js';
 
 const CitiesWeather = () => {
   const [citiesWeather, setCitiesWeather] = useState([]);
@@ -13,7 +13,7 @@ const CitiesWeather = () => {
       setLoading(true);
       setError(null);
       
-      const result = await fetchAllCitiesWeather();
+      const result = await fetchDashboardWeather();
       setCitiesWeather(result.data);
       setLastUpdated(result.timestamp);
       setCached(result.cached);

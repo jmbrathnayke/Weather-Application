@@ -325,4 +325,99 @@ router.get('/forecast/:city', async (req, res) => {
   }
 });
 
+// Search endpoint for individual city weather (what the frontend is calling)
+router.get('/search', async (req, res) => {
+  const city = req.query.city;
+  
+  if (!city) {
+    return res.status(400).json({ error: 'City parameter is required' });
+  }
+
+  console.log(`🔍 Search request for city: ${city}`);
+
+  // Check cache first
+  const cacheKey = `search_${city.toLowerCase()}`;
+  const cachedData = weatherCache.get(cacheKey);
+  if (cachedData) {
+    return res.json({
+      weather: cachedData.weather,
+      forecast: cachedData.forecast,
+      cached: true,
+      timestamp: cachedData.timestamp
+    });
+  }
+
+  try {
+    const API_KEY = process.env.OPENWEATHER_API_KEY;
+    if (!API_KEY) {
+      console.error('❌ OpenWeather API key not configured');
+      return res.status(500).json({ error: 'Weather service not configured' });
+    }
+
+    // Fetch current weather
+    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`;
+    console.log(`🌐 Fetching current weather for ${city}...`);
+    
+    const weatherResponse = await axios.get(weatherUrl);
+    const weather = weatherResponse.data;
+
+    // Fetch 5-day forecast
+    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`;
+    console.log(`📅 Fetching forecast for ${city}...`);
+    
+    const forecastResponse = await axios.get(forecastUrl);
+    const forecastData = forecastResponse.data;
+
+    // Process forecast data (group by day)
+    const dailyForecasts = [];
+    const today = new Date().toDateString();
+    
+    for (const item of forecastData.list) {
+      const itemDate = new Date(item.dt * 1000).toDateString();
+      
+      // Skip today's forecasts, show upcoming days
+      if (itemDate === today) continue;
+      
+      // Take the first forecast for each day (usually around noon)
+      const existingDay = dailyForecasts.find(f => 
+        new Date(f.dt * 1000).toDateString() === itemDate
+      );
+      
+      if (!existingDay && dailyForecasts.length < 5) {
+        dailyForecasts.push(item);
+      }
+    }
+
+    const result = {
+      weather: weather,
+      forecast: dailyForecasts,
+      cached: false,
+      timestamp: new Date().toISOString()
+    };
+
+    // Cache the result
+    weatherCache.set(cacheKey, result);
+    console.log(`✅ Weather data for ${city} fetched and cached successfully`);
+
+    res.json(result);
+  } catch (error) {
+    console.error(`❌ Error fetching weather data for ${city}:`, error.message);
+    
+    if (error.response?.status === 404) {
+      return res.status(404).json({ 
+        error: `City "${city}" not found. Please check the spelling and try again.` 
+      });
+    }
+    
+    if (error.response?.status === 401) {
+      console.error('❌ Invalid API key');
+      return res.status(500).json({ error: 'Invalid API key configuration' });
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to fetch weather data. Please try again later.' 
+    });
+  }
+});
+
 export default router;

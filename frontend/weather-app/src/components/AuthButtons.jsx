@@ -9,7 +9,11 @@ const AuthButtons = () => {
     loginWithRedirect({
       authorizationParams: {
         connection: 'Username-Password-Authentication',
-        prompt: 'login'
+        prompt: 'login',
+        // Force fresh authentication to trigger MFA
+        max_age: 0,
+        // Request specific scopes that may trigger MFA
+        scope: 'openid profile email'
       }
     });
   };
@@ -18,7 +22,7 @@ const AuthButtons = () => {
     <div className="auth-buttons">
       {!isAuthenticated ? (
         <button onClick={handleLogin} className="login-button">
-          <span>🔐</span> Login
+          <span></span> Login
         </button>
       ) : (
         <div className="user-section">
@@ -27,7 +31,7 @@ const AuthButtons = () => {
             <span className="user-name">{user?.name || user?.email}</span>
           </div>
           <button onClick={() => logout({ returnTo: window.location.origin })} className="logout-button">
-            <span>🚪</span> Logout
+            <span></span> Logout
           </button>
         </div>
       )}

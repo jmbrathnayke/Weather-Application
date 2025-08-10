@@ -2,13 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import weatherRoutes from './routes/weather-dashboard.js';
+// Use simple auth for development to avoid JWT issues
 import { checkJwt, extractUser, authErrorHandler, sessionUtils } from './middleware/auth-simple.js';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5002;
 
 // Middleware
 app.use(cors({
@@ -30,11 +31,17 @@ app.get('/api/health', (req, res) => {
 
 // Authentication middleware (JWT validation) - applied after health check
 app.use('/api', (req, res, next) => {
-  // Skip auth for health check
-  if (req.path === '/health') {
+  // Skip auth ONLY for health check endpoint
+  const publicEndpoints = ['/health'];
+  
+  // Check if the path starts with any public endpoint
+  const isPublic = publicEndpoints.some(endpoint => req.path.startsWith(endpoint));
+  
+  if (isPublic) {
     return next();
   }
-  // Apply JWT check for all other API routes
+  
+  // Apply JWT check for ALL other API routes (including weather dashboard)
   checkJwt(req, res, next);
 });
 app.use(extractUser);

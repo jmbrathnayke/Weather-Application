@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getCacheInfo, clearWeatherCache, getCacheStats } from '../services/weatherService';
+import { getCacheInfo, clearWeatherCache, getCacheStats } from '../services/weatherService.js';
 
 const CacheInfo = ({ isVisible, onToggle }) => {
   const [cacheInfo, setCacheInfo] = useState({ size: 0, entries: [] });
