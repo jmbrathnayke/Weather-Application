@@ -224,27 +224,29 @@ export const fetchDashboardWeather = async () => {
 export const fetchWeatherData = async (city) => {
   console.log(`🌤️ Fetching weather for ${city}...`);
   
-  const cacheKey = weatherCache.generateKey('/weather/search', { city });
-  
-  // Check frontend cache first
-  const cachedData = weatherCache.get(cacheKey);
-  if (cachedData) {
-    console.log(`📋 Serving ${city} weather from frontend cache`);
-    return {
-      ...cachedData,
-      frontendCached: true
-    };
-  }
+  // Remove frontend caching to see backend cache in action
+  // const cacheKey = weatherCache.generateKey('/weather/search', { city });
+  // const cachedData = weatherCache.get(cacheKey);
+  // if (cachedData) {
+  //   console.log(`📋 Serving ${city} weather from frontend cache`);
+  //   return {
+  //     ...cachedData,
+  //     frontendCached: true
+  //   };
+  // }
 
   try {
     const response = await weatherAPI.get(`/weather/search?city=${encodeURIComponent(city)}`);
+    console.log(`🔍 Backend response for ${city}:`, response.data.cached ? 'CACHED' : 'FRESH');
+    
     const data = {
       ...response.data,
-      frontendCached: false
+      frontendCached: false,
+      backendCached: response.data.cached || false
     };
 
-    // Cache the response
-    weatherCache.set(cacheKey, data);
+    // Don't cache on frontend to see backend cache working
+    // weatherCache.set(cacheKey, data);
     
     return data;
   } catch (error) {
