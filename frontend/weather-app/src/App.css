@@ -6,8 +6,7 @@
 
 /* Modern Design Variables */
 :root {
-  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --primary-gradient: linear-gradient(135deg, #0a0c18 0%, #0f112b 100%);
   --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
   --glass-bg: rgba(255, 255, 255, 0.1);
   --glass-border: rgba(255, 255, 255, 0.2);
@@ -195,9 +194,12 @@ body {
 
 .user-avatar {
   font-size: 1.2rem;
+  background-color: var(--text-primary);
+  border-radius: 50%;
 }
 
 .user-name {
+  color: var(--text-primary);
   font-size: 0.95rem;
   max-width: 200px;
   overflow: hidden;
@@ -205,11 +207,12 @@ body {
   white-space: nowrap;
 }
 
+
 .login-button, .logout-button {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--secondary-gradient);
+  background:linear-gradient(135deg, rgb(235, 0, 0) 0%, #ff0000 100%);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -218,14 +221,14 @@ body {
   border-radius: 50px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+  box-shadow: 0 4px 15px rgba(255, 0, 34, 0.3);
   letter-spacing: 0.5px;
 }
 
 .login-button:hover, .logout-button:hover {
   transform: translateY(-2px);
   box-shadow: var(--hover-shadow);
-  background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+  background: linear-gradient(135deg, #ff0000 0%, #ff0000 100%);
 }
 
 .logout-button {
@@ -236,7 +239,7 @@ body {
 }
 
 .logout-button:hover {
-  background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+  background:red;
 }
 
 /* Search Bar Styling */
@@ -247,13 +250,10 @@ body {
 .search-input-container {
   display: flex;
   max-width: 100%;
-  margin: 0 auto;
-  background: rgba(255, 255, 255, 0.15);
+  margin: 0 auto; 
   backdrop-filter: blur(20px);
   border-radius: 50px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
   overflow: hidden;
-  box-shadow: var(--shadow);
   transition: all 0.3s ease;
 }
 
@@ -267,18 +267,18 @@ body {
   padding: 14px 20px;
   border: none;
   background: transparent;
-  color: var(--text-primary);
+  color: #000;
   font-size: 1rem;
   outline: none;
 }
 
 .search-input::placeholder {
-  color: var(--text-secondary);
+  color:black;
   opacity: 0.8;
 }
 
 .search-button {
-  background: var(--secondary-gradient);
+  background:linear-gradient(135deg, #607480 0%, #121342 100%);
   border: none;
   padding: 14px 20px;
   color: white;
@@ -760,9 +760,7 @@ body {
   to { transform: rotate(360deg); }
 }
 
-/* ===========================
-   ERROR MESSAGE COMPONENT
-   =========================== */
+/*ERROR MESSAGE COMPONENT*/
 .error-message {
   background: linear-gradient(135deg, #fa2626 25%, #ff2d22 100%);
   color: white;
@@ -786,9 +784,7 @@ body {
   line-height: 1.4;
 }
 
-/* ===========================
-   LOADING SPINNER COMPONENT
-   =========================== */
+/* LOADING SPINNER COMPONENT */
 .loading-spinner {
   display: flex;
   flex-direction: column;
@@ -822,11 +818,9 @@ body {
   margin: 0;
 }
 
-/* ===========================
-   WEATHER CARD COMPONENT
-   =========================== */
+/*WEATHER CARD COMPONENT */
 .weather-card {
-  background: linear-gradient(130deg, #0a0b0c 0%, #131431 100%);
+  background: linear-gradient(130deg, #1c2024 0%, #131431 100%);
   border-radius: 20px;
   padding: 2rem;
   color: white;
@@ -930,9 +924,7 @@ body {
   font-weight: 500;
 }
 
-/* ===========================
-   CURRENT WEATHER CARD
-   =========================== */
+/*CURRENT WEATHER CARD*/
 .current-weather-card {
   background: linear-gradient(135deg, #0b143b 0%, #0f101d 100%);
   border-radius: 20px;
@@ -1034,11 +1026,9 @@ body {
   }
 }
 
-/* ===========================
-   FORECAST LIST COMPONENT
-   =========================== */
+/*FORECAST LIST COMPONENT */
 .forecast-list {
-  background: linear-gradient(130deg, #0c0a0a 0%, #131431 100%);
+  background: linear-gradient(130deg, #0c0a0a 0%, #18193d 100%);
   border-radius: 15px;
   padding: 2rem;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
@@ -1161,9 +1151,7 @@ body {
   opacity: 0.8;
 }
 
-/* ===========================
-   RESPONSIVE DESIGN - MOBILE
-   =========================== */
+/*RESPONSIVE DESIGN - MOBILE */
 @media (max-width: 768px) {
   body {
     flex-direction: column;
@@ -1718,15 +1706,13 @@ body {
   background: linear-gradient(135deg, #1c2031 0%, #070927 100%);
 }
 
-/* ===========================
-   WEATHER DASHBOARD COMPONENT
-   =========================== */
-
+/*WEATHER DASHBOARD COMPONENT */
 /* Weather Dashboard Styles */
 .dashboard-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1c2031 0%, #070927 100%);
+ background: rgba(255, 255, 255, 0.1);
   padding: 20px;
+  border-radius: 20px;
 }
 
 .dashboard-header {
@@ -1734,11 +1720,11 @@ body {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 30px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(102, 101, 101, 0.048);
   backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.158);
 }
 
 .dashboard-title h1 {
@@ -1893,9 +1879,7 @@ body {
   }
 }
 
-/* ===========================
-   CACHE INFO COMPONENT
-   =========================== */
+/* CACHE INFO COMPONENT*/
 
 /* Cache Info Toggle Button */
 .cache-info-toggle {
@@ -1938,7 +1922,7 @@ body {
 }
 
 .cache-info-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0c0e1b 0%, #182152 100%);
   color: white;
   padding: 16px;
   display: flex;
