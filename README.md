@@ -12,7 +12,7 @@ A sophisticated full-stack weather application with real-time weather data, inte
 - **Cache Analytics**: Real-time cache statistics and management
 
 ### 🔐 Authentication & Security
-- **Auth0 Integration**: Secure user authentication with MFA support
+- **Auth0 Integration**: Secure user authentication with MFA support (email and google authenticator app)
 - **JWT Token Management**: Automatic token handling and refresh
 - **Protected Routes**: Authenticated access to weather features
 - **Development Mode**: Bypass authentication for testing
