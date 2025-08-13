@@ -5,6 +5,7 @@ import React from "react";
 const AuthButtons = () => {
   const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();
 
+  //function
   const handleLogin = () => {
     loginWithRedirect({
       authorizationParams: {
